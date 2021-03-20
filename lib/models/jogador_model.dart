@@ -1,6 +1,6 @@
-class Jogador {
-  String nome;
-  double quantidadePontos;
+class Player {
+  String name;
+  double quantityPoints;
 
-  Jogador({this.nome, this.quantidadePontos});
+  Player({this.name, this.quantityPoints});
 }

@@ -8,44 +8,67 @@ class JogoDaVelhaPage extends StatefulWidget {
 }
 
 class _JogoDaVelhaPageSate extends State<JogoDaVelhaPage> {
-  Jogador _jogadorDaVez;
-  Jogador _jogadorX = Jogador(nome: 'X');
-  Jogador _jogadorO = Jogador(nome: 'O');
+  Player _playerOfTurn;
+  Player _playerX = Player(name: 'X');
+  Player _playerO = Player(name: 'O');
 
-  final List<List<Jogador>> _tabuleiro = [
+  List<List<Player>> _board = [
     [null, null, null],
     [null, null, null],
     [null, null, null],
   ];
 
+  bool gameStarted = false;
+
   @override
   void initState() {
-    _jogadorDaVez = _jogadorX;
+    _playerOfTurn = _playerX;
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Jogo da velha, jogador da vez: ${_jogadorDaVez.nome}'),
-        elevation: 0,
-        backgroundColor: Colors.blueAccent,
-      ),
-      body: Container(color: Colors.blueGrey, child: _createBoard()),
+        appBar: AppBar(
+          title: Text('Jogo da velha'),
+          elevation: 0,
+          backgroundColor: Colors.purple,
+        ),
+        // body: Container(color: Colors.blueGrey, child: _createBoard()),
+        body: createContent());
+  }
+
+  Widget createContent() {
+    return Column(
+      children: [
+        Expanded(
+            flex: 2,
+            child: Container(color: Colors.white, child: _createBoard())),
+        Expanded(
+            child:
+                Container(color: Colors.white, child: _createContentBottom())),
+      ],
     );
+  }
+
+  void reset() {
+    _playerOfTurn = _playerX;
+    _board = [
+      [null, null, null],
+      [null, null, null],
+      [null, null, null],
+    ];
   }
 
   Widget _createBoard() {
-    final List<int> listaFixa =
-        Iterable<int>.generate(_tabuleiro.length).toList();
+    final List<int> listaFixa = Iterable<int>.generate(_board.length).toList();
     return Column(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: listaFixa.map((j) => _createLinha(_tabuleiro[j], j)).toList(),
+      children: listaFixa.map((j) => _createRow(_board[j], j)).toList(),
     );
   }
 
-  Widget _createLinha(List<Jogador> linha, int j) {
+  Widget _createRow(List<Player> linha, int j) {
     final List<int> listaFixa = Iterable<int>.generate(linha.length).toList();
     return Container(
       child: Row(
@@ -56,100 +79,154 @@ class _JogoDaVelhaPageSate extends State<JogoDaVelhaPage> {
     );
   }
 
-  Widget _createPosition(Jogador jogador, int j, int i) {
+  Widget _createPosition(Player player, int j, int i) {
     return Container(
       child: GestureDetector(
         onTap: () {
-          _jogada(j, i);
+          _move(j, i);
+          gameStarted = true;
         },
         child: Container(
           height: 100,
           width: 100,
-          color: Colors.grey[300],
+          color: Colors.grey[350],
           child: Center(
-            child: _criaImagemPosicao(jogador),
+            child: _createImagePosition(player),
           ),
         ),
       ),
     );
   }
 
-  Image _criaImagemPosicao(Jogador jogador) {
-    if (jogador == null) {
+  Image _createImagePosition(Player player) {
+    if (player == null) {
       return null;
     }
-    if (jogador.nome == 'X') {
+    if (player.name == 'X') {
       return Image.asset('assets/x.png');
     } else {
       return Image.asset('assets/o.png');
     }
   }
 
-  void _jogada(int j, int i) {
-    if (_tabuleiro[j][i] == null) {
-      setState(() => _tabuleiro[j][i] = _jogadorDaVez);
-      _verificaGanhador();
-      _trocaJogador();
+  Widget _createContentBottom() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(25.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Jogador da vez: ${_playerOfTurn.name}',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+              ),
+
+              // TextStyle(
+              // child:
+              //     )
+            ],
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [gameStarted ? createButtonRestart() : Text('')],
+        ),
+      ],
+    );
+  }
+
+  ElevatedButton createButtonRestart() {
+    return ElevatedButton(
+        child: Text('Restart'),
+        onPressed: () {
+          setState(() {
+            reset();
+          });
+        },
+        style: styleButtonRestart());
+  }
+
+  ButtonStyle styleButtonRestart() {
+    return ElevatedButton.styleFrom(
+        primary: Colors.purple,
+        padding: EdgeInsets.symmetric(
+          horizontal: 70,
+          vertical: 15,
+        ),
+        textStyle: TextStyle(
+          fontSize: 30,
+          fontWeight: FontWeight.bold,
+        ));
+  }
+
+  void _move(int j, int i) {
+    if (_board[j][i] == null) {
+      setState(() => _board[j][i] = _playerOfTurn);
+      _checkWinner();
+      _swapPlayer();
     } else {
-      _mostrarMensagem(
-          'Está posição já está ocupada, tente outra, seu apedeuta!');
+      _showMessage('Está posição já está ocupada, tente utilizar outra!');
     }
   }
 
-  void _trocaJogador() {
+  void _swapPlayer() {
     setState(() {
-      _jogadorDaVez = _jogadorDaVez.nome == 'X' ? _jogadorO : _jogadorX;
+      _playerOfTurn = _playerOfTurn.name == 'X' ? _playerO : _playerX;
     });
   }
 
-  void _mostrarMensagem(String msg) {
+  void _showMessage(String msg) {
     final snackBar = SnackBar(
       content: Text(msg),
       action: SnackBarAction(
         label: 'OK',
         onPressed: () {
+          // Scaffold.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).hideCurrentSnackBar();
         },
       ),
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    // Scaffold.of(context).showSnackBar(snackBar);
   }
 
-  void _verificaGanhador() {
-    _verificarHorizontal();
-    _verificarVertical();
-    _verificaDiagonal();
+  void _checkWinner() {
+    _checkHorizontal();
+    _checkVertical();
+    _checkDiagonal();
   }
 
-  void _verificarHorizontal() {
+  void _checkHorizontal() {
     for (var i = 0; i < 3; i++) {
-      if (_tabuleiro[i][0] != null &&
-          _tabuleiro[i][0] == _tabuleiro[i][1] &&
-          _tabuleiro[i][0] == _tabuleiro[i][2]) {
-        _mostrarMensagem('O jogador ${_tabuleiro[i][0].nome} ganhou!');
+      if (_board[i][0] != null &&
+          _board[i][0] == _board[i][1] &&
+          _board[i][0] == _board[i][2]) {
+        _showMessage('O jogador ${_board[i][0].name} ganhou!');
       }
     }
   }
 
-  void _verificarVertical() {
+  void _checkVertical() {
     for (var i = 0; i < 3; i++) {
-      if (_tabuleiro[0][i] != null &&
-          _tabuleiro[0][i] == _tabuleiro[1][i] &&
-          _tabuleiro[0][i] == _tabuleiro[2][i]) {
-        _mostrarMensagem('O jogador ${_tabuleiro[0][i].nome} ganhou!');
+      if (_board[0][i] != null &&
+          _board[0][i] == _board[1][i] &&
+          _board[0][i] == _board[2][i]) {
+        _showMessage('O jogador ${_board[0][i].name} ganhou!');
       }
     }
   }
 
-  void _verificaDiagonal() {
-    if (_tabuleiro[0][0] != null &&
-        _tabuleiro[0][0] == _tabuleiro[1][1] &&
-        _tabuleiro[0][0] == _tabuleiro[2][2]) {
-      _mostrarMensagem('O jogador ${_tabuleiro[0][0].nome} ganhou!');
-    } else if (_tabuleiro[0][2] != null &&
-        _tabuleiro[0][2] == _tabuleiro[1][1] &&
-        _tabuleiro[0][2] == _tabuleiro[2][0]) {
-      _mostrarMensagem('O jogador ${_tabuleiro[0][2].nome} ganhou!');
+  void _checkDiagonal() {
+    if (_board[0][0] != null &&
+        _board[0][0] == _board[1][1] &&
+        _board[0][0] == _board[2][2]) {
+      _showMessage('O jogador ${_board[0][0].name} ganhou!');
+    } else if (_board[0][2] != null &&
+        _board[0][2] == _board[1][1] &&
+        _board[0][2] == _board[2][0]) {
+      _showMessage('O jogador ${_board[0][2].name} ganhou!');
     }
   }
 }
